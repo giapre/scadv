@@ -1,0 +1,63 @@
+import os
+import itertools
+
+configfile: "config.yaml"
+
+DATA_DIR = config["data_dir"]
+RESULTS_DIR = config["results_dir"]
+
+SUBJECTS = config["subjects"]
+WS = config["ws_values"]
+CTX = config["njdopa_ctx_values"]
+STR = config["njdopa_str_values"]
+
+# Generate full parameter grid
+PARAM_GRID = list(itertools.product(SUBJECTS, WS, CTX, STR))
+
+
+# ------------------------
+# Rule ALL
+# ------------------------
+
+rule all:
+    input:
+        expand(
+            os.path.join(
+                RESULTS_DIR,
+                "{subject}",
+                "ws{ws}_ctx{ctx}_str{str}.npz"
+            ),
+            subject=SUBJECTS,
+            ws=WS,
+            ctx=CTX,
+            str=STR
+        )
+
+
+# ------------------------
+# Simulation rule
+# ------------------------
+
+rule simulate_patient:
+    input:
+        lengths=lambda wildcards: os.path.join(DATA_DIR, wildcards.subject, "dk_lengths_with_sero_and_dopa.csv"),
+        Ceids=lambda wildcards: os.path.join(DATA_DIR, wildcards.subject, "Ceids.npy"),
+        idelays=lambda wildcards: os.path.join(DATA_DIR, wildcards.subject, "idelays.npy"),
+        Ja=lambda wildcards: os.path.join(DATA_DIR, wildcards.subject, "Ja.npy"),
+        receptors=lambda wildcards: os.path.join(DATA_DIR, wildcards.subject, "Receptors.npy")
+    output:
+        os.path.join(
+            RESULTS_DIR,
+            "{subject}",
+            "ws{ws}_ctx{ctx}_str{str}.npz"
+        )
+    threads: 4
+    shell:
+        """
+        python run_simulation.py \
+            {wildcards.subject} \
+            {wildcards.ws} \
+            {wildcards.ctx} \
+            {wildcards.str} \
+            {output}
+        """

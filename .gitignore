@@ -3,3 +3,4 @@ data
 results
 snakeproject2/.snakemake
 snakeproject2/results
+synth_pat/scripts/sbi-logs

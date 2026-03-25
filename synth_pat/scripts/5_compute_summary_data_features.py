@@ -22,6 +22,7 @@ for pid in os.listdir(Paths.RESULTS):
             sim_fcd = sim_data['FCD']
             sim_alff = sim_data['ALFF']
             params = np.round(sim_data['params'],4)
+            param_names = sim_data['param_names']
 
             R = sim_fc.shape[0]
             triu_idx = np.triu_indices(R, k=1)
@@ -29,7 +30,7 @@ for pid in os.listdir(Paths.RESULTS):
             sim_var_fcd = fcd_variance_excluding_overlap(sim_fcd, window_length=20, overlap=19) #np.var(sim_fcd,axis=0)
 
             #if 'jdopa' in type_of_sweep:
-            sim_df = pd.DataFrame({'GBC': sim_gbc, 'VAR_FCD': sim_var_fcd, 'ws': np.round(params[:,0],4), 'njdopa_ctx': np.round(params[:,1],4), 'njdopa_str': np.round(params[:,2],4)})
+            sim_df = pd.DataFrame({'GBC': sim_gbc, 'VAR_FCD': sim_var_fcd, param_names[0]: np.round(params[:,0],4), param_names[1]: np.round(params[:,1],4), param_names[2]: np.round(params[:,2],4)})
             #else:
             #    sim_df = pd.DataFrame({'GBC': sim_gbc, 'VAR_FCD': sim_var_fcd, 'we': np.round(params[:,0],4), 'wd': np.round(params[:,1],4), 'ws': np.round(params[:,2],4)})#'we': np.round(params[:,0],4), 'sigma': np.round(params[:,1],4)})#'we': np.round(params[:,0],4), 'wd': np.round(params[:,1],4), 'ws': np.round(params[:,2],4)})
 

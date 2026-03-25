@@ -336,3 +336,21 @@ def plot_sbi_kde_distr(params_label, prior, posterior_samples, pid, type_of_swee
     
     plt.tight_layout(pad=1.0)
     plt.savefig(f"{Paths.RESULTS}/{pid}/{type_of_sweep}_{type_of_extraction}_Posterior_EstimatedParams_kde.png", dpi=300)
+
+def plot_signal_and_matrices(pid, ses, combination, filtered_bold, fcd, var_fcd, fc, mean_fc, path):
+
+    plt.figure(figsize=(12, 5))
+    plt.subplot(131)
+    plt.plot(2*filtered_bold/filtered_bold.max(axis=0) + np.arange(filtered_bold.shape[1]), linewidth=0.5)
+    plt.title("Filtered BOLD signals")
+    plt.subplot(132)
+    plt.imshow(fcd, cmap='viridis')
+    plt.colorbar(shrink=0.6)
+    plt.title(f"FCD, VAR={var_fcd:.5f}")
+    plt.subplot(133)
+    plt.imshow(fc, cmap='viridis')
+    plt.colorbar(shrink=0.6)
+    plt.title(f"FC, GBC={mean_fc:.5f}")
+    plt.suptitle(f"Subject {pid}, session {ses}, strategy: {combination}")
+    plt.savefig(f"{path}/{pid}_{ses}_{combination}_signal_matrices.png")
+    plt.close()

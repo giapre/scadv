@@ -19,18 +19,20 @@ for pid in os.listdir(Paths.RESULTS):
             bold_all = data["bold"]
             bold_all = bold_all[:,:84,:] # removing midbrain structures (SN, RF, VTA)
             params = data["params"]
+            param_names = data["param_names"]
 
             fc_ut, fcd_ut, zscored_ALFF, fALFF = compute_features(bold_all, 1000, 20, 19)
 
             ## SAVE THE REUSLTS
             output_name = f'{Paths.RESULTS}/{pid}/{type_of_sweep}_features.npz'
+            
 
             np.savez(output_name, 
                         FC=fc_ut,
                         FCD=fcd_ut,
                         ALFF=zscored_ALFF,
                         fALFF=fALFF,
-                        params=params)
+                        params=params,)
 
             assert os.path.exists(output_name), "Save failed!"
             print(f'Data features from simulations saved at {output_name}')

@@ -1,0 +1,29 @@
+configfile: "config.yaml"
+
+SUBJECTS = config["subjects"]
+SCALERS = config["scalers"]
+MEDS = config["medications"]
+
+TYPE = "bold_sweep"
+
+rule all:
+    input:
+        expand(
+            "results/{subject}/" + TYPE + "_medication={med}_ki={scaler}.npz",
+            subject=SUBJECTS,
+            med=MEDS,
+            scaler=SCALERS
+        )
+
+rule run_simulation:
+    output:
+        "results/{subject}/" + TYPE + "_medication={med}_ki={scaler}.npz"
+    params:
+        subject=lambda wc: wc.subject,
+        scaler=lambda wc: wc.scaler,
+        med=lambda wc: wc.med
+    threads: 1
+    shell:
+        """
+        python run_medication_sim.py {params.subject} {params.scaler} {params.med}
+        """

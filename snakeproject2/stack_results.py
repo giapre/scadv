@@ -50,9 +50,9 @@ for pid in os.listdir(SNAKE_RESULT_DIR):
         save_path = f'{Paths.RESULTS}/{pid}/'
         os.makedirs(save_path, exist_ok = True )
         save_name = f'{save_path}/bigger_we_bold_sweep.npz'
-        np.savez(save_name, bold=bolds, params=params)
+        np.savez(save_name, bold=bolds, params=params, param_names=['ws', 'njdopa_ctx', 'njdopa_str'])
 
-        print("Saved merged file:", save_path)
+        print("Saved merged file:", save_name)
         print(params.shape)
 
         # ------------------------

@@ -14,10 +14,8 @@ outpath = f'{Paths.FIGURES}/{type_of_sweep}'
 
 feat_df = pd.read_csv(feat_file, index_col=0)
 
-p1_name = 'ws'
-p2_name = 'njdopa_ctx'
-p3_name = 'njdopa_str'
-params = [p1_name, p2_name, p3_name]
+params = bold_file['param_names']
+p1_name, p2_name, p3_name = params
 
 
 fig = plt.figure(figsize=(10,10))

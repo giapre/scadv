@@ -1,0 +1,57 @@
+import pandas as pd
+
+configfile: "config.yaml"
+
+# ------------------------
+# Load config
+# ------------------------
+
+SUBJECTS = config["subjects"]
+MED_FILE = config["medication_params_file"]
+N_PARAM = config["n_param_sets"]
+OUTDIR = config["output_dir"]
+
+# ------------------------
+# Get number of medications
+# ------------------------
+
+med_df = pd.read_csv(MED_FILE)
+MED_INDICES = list(range(len(med_df)))
+PARAM_INDICES = list(range(N_PARAM))
+
+# ------------------------
+# Rule all
+# ------------------------
+
+rule all:
+    input:
+        expand(
+            f"{OUTDIR}/{{subject}}_med_{{med_idx}}_param_{{param_idx}}.npz",
+            subject=SUBJECTS,
+            med_idx=MED_INDICES,
+            param_idx=PARAM_INDICES
+        )
+
+# ------------------------
+# Simulation rule
+# ------------------------
+
+rule run_simulation:
+    output:
+        f"{OUTDIR}/{{subject}}_med_{{med_idx}}_param_{{param_idx}}.npz"
+    params:
+        script=config["script"]
+    log:
+        f"{OUTDIR}/logs/{{subject}}_med{{med_idx}}_param{{param_idx}}.log"
+    shell:
+        """
+        mkdir -p {OUTDIR}
+        mkdir -p {OUTDIR}/logs
+        
+        python {params.script} \
+            {wildcards.subject} \
+            {wildcards.med_idx} \
+            {wildcards.param_idx} \
+            {output} \
+            > {log} 2>&1
+        """

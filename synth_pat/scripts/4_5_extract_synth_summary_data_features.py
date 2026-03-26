@@ -21,7 +21,8 @@ for pid in os.listdir(Paths.RESULTS):
             bold_all = data["bold"]
             bold_all = bold_all[:,:84,:] # removing midbrain structures (SN, RF, VTA)
             params = data["params"]
-            param_names = data["param_names"]
+            #param_names = data["param_names"]
+            param_names = ['ws', 'njdopa_ctx', 'njdopa_str']
 
             sim_fc, sim_fcd, sim_alff, sim_fALFF = compute_features(bold_all, 1000, 20, 19)
 
@@ -34,8 +35,13 @@ for pid in os.listdir(Paths.RESULTS):
             sim_df = pd.DataFrame({'GBC': sim_gbc, 'VAR_FCD': sim_var_fcd, param_names[0]: np.round(params[:,0],4), param_names[1]: np.round(params[:,1],4), param_names[2]: np.round(params[:,2],4)})
             #else:
             #    sim_df = pd.DataFrame({'GBC': sim_gbc, 'VAR_FCD': sim_var_fcd, 'we': np.round(params[:,0],4), 'wd': np.round(params[:,1],4), 'ws': np.round(params[:,2],4)})#'we': np.round(params[:,0],4), 'sigma': np.round(params[:,1],4)})#'we': np.round(params[:,0],4), 'wd': np.round(params[:,1],4), 'ws': np.round(params[:,2],4)})
-            for i in range(sim_gbc.shape[0]):
-            plot_signal_and_matrices(pid, ses, type_of_sweep, bold_all, sim_fcd[:,:,i], sim_var_fcd[i], sim_fc[:,:,i], sim_gbc[i], DERIVATIVES_DIR)
+            FIG_DIR = f'{Paths.RESULTS}/{pid}/sim_bold_ts'
+            os.makedirs(FIG_DIR, exist_ok=True)
+            #for i in range(sim_gbc.shape[0])[::90]:
+            #    plot_signal_and_matrices(pid, f'{param_names[1]}: {np.round(params[:,0],4)}, {param_names[1]}: {np.round(params[:,1],4)}, {param_names[2]}: {np.round(params[:,2],4)}', type_of_sweep, bold_all[:,:,i], sim_fcd[:,:,i], sim_var_fcd[i], sim_fc[:,:,i], sim_gbc[i], FIG_DIR)
+
+            if os.path.exists(f'{Paths.RESULTS}/{pid}/{type_of_sweep}_extracted_features.csv'):
+                continue
 
             fc_regions = ['PU', 'CA', 'HI', 'STG', 'CER', 'CACG', 'RACG', 'IN', 'PCG', 'POP', 'POR', 'PTR']
             h_fc_regions = ['L.'+region for region in fc_regions] + ['R.'+region for region in fc_regions]

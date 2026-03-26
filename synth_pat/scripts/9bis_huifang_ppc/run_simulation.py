@@ -22,12 +22,13 @@ np.random.seed(int(run_id))
 
 PID_RESULTS = os.path.join(Paths.RESULTS, subject_id)
 
-post_distr_arr = np.load(f'{PID_RESULTS}/bold_sweep_daniela_posterior_distr.npz')
+post_distr_arr = np.load(f'{PID_RESULTS}/bigger_we_bold_sweep_daniela_posterior_distr.npz')
 post_distr = post_distr_arr['est_params']
 param_names = post_distr_arr['param_names']
 
-if param_names != ['ws', 'njdopa_ctx', 'njdopa_str']:
+if not np.array_equal(param_names, np.array(['ws', 'njdopa_ctx', 'njdopa_str'])):
     print('Check the parameters order!')
+    print(param_names)
 else:
     ws_est = 10**np.random.choice(post_distr[:,0]) 
     njdopa_ctx_est = 10**np.random.choice(post_distr[:,1])

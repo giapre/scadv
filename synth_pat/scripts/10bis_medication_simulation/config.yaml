@@ -1,0 +1,8 @@
+subjects: [sub-2015052501, sub-2015060902, sub-2019012101, sub-2015060401, sub-2015061901, sub-2019012402]
+
+medication_params_file: resources/mediction_sweep_params.csv
+
+n_param_sets: 100
+
+output_dir: results
+script: scripts/run_medication_sim.py

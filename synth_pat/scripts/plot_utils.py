@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
-from synth_pat.paths import Paths
+from paths import Paths
 
 def minmaxscale(signal):
     smin = signal.min(axis=0)
@@ -223,6 +223,7 @@ def save_feat_and_color_by_param(params, scatter0, scatter1, feat_df, outpath):
     plt.tight_layout()
     savepath = f'{outpath}/pca_scatter.png'
     plt.savefig(savepath)
+    plt.close()
     #plt.show()
 
 def plot_feat_and_color_by_param(params, scatter0, scatter1, feat_df):
@@ -286,7 +287,8 @@ def plot_pca_feat_importance(params, X_r, feat_df, importance):
     plt.tight_layout()
     plt.show()
 
-def plot_sbi_violin_estimated_params(params_label, est_params, pid, type_of_sweep, type_of_extraction):
+
+def plot_sbi_violin_estimated_params(params_label, est_params, path_to_save, ses, type_of_sweep, type_of_extraction):
     """
     Plot the violin plots of the estimated parameters distribution (posterior distribution from sbi)
     """
@@ -300,9 +302,10 @@ def plot_sbi_violin_estimated_params(params_label, est_params, pid, type_of_swee
         plt.xticks([])
         plt.yticks(fontsize=14)
     plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
-    plt.savefig(f"{Paths.RESULTS}/{pid}/{type_of_sweep}_{type_of_extraction}_PosteriorViloin_EstimatedParams_obs.png", dpi=300)
+    plt.savefig(f"{path_to_save}/{ses}_{type_of_sweep}_{type_of_extraction}_PosteriorViloin_EstimatedParams_obs.png", dpi=300)
+    plt.close()
 
-def plot_sbi_kde_distr(params_label, prior, posterior_samples, pid, type_of_sweep, type_of_extraction):
+def plot_sbi_kde_distr(params_label, prior, posterior_samples, path_to_save, ses, type_of_sweep, type_of_extraction):
     plt.figure(figsize=(16, 4))
 
     for i in range (len(params_label)): 
@@ -335,4 +338,21 @@ def plot_sbi_kde_distr(params_label, prior, posterior_samples, pid, type_of_swee
                 plt.legend(fontsize=16, frameon=False)
     
     plt.tight_layout(pad=1.0)
-    plt.savefig(f"{Paths.RESULTS}/{pid}/{type_of_sweep}_{type_of_extraction}_Posterior_EstimatedParams_kde.png", dpi=300)
+    plt.savefig(f"{path_to_save}/{ses}_{type_of_sweep}_{type_of_extraction}_Posterior_EstimatedParams_kde.png", dpi=300)
+    plt.close()
+
+def plot_signal_and_matrices(pid, ses, combination, filtered_bold, fcd, var_fcd, fc, mean_fc, path):
+
+    plt.figure(figsize=(12, 5))
+    plt.subplot(131)
+    plt.plot(2*filtered_bold/filtered_bold.max(axis=0) + np.arange(filtered_bold.shape[1]), linewidth=0.5)
+    plt.title("Filtered BOLD signals")
+    plt.subplot(132)
+    plt.imshow(fcd, cmap='viridis')
+    plt.title(f"FCD, VAR={var_fcd:.5f}")
+    plt.subplot(133)
+    plt.imshow(fc, cmap='viridis')
+    plt.title(f"FC, GBC={mean_fc:.5f}")
+    plt.suptitle(f"Subject {pid}, session {ses}, strategy: {combination}")
+    plt.savefig(f"{path}/{pid}_{ses}_{combination}_signal_matrices.png")
+    plt.close()

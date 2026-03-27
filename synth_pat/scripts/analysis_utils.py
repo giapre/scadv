@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from synth_pat.paths import Paths
+from paths import Paths
 
 def zscore_scale(bold):
     bold = bold - bold.mean(axis=0, keepdims=True)

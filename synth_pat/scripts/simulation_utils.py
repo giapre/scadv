@@ -4,8 +4,8 @@ import scipy
 import jax
 import os 
 import vbjax as vb
-import synth_pat.scripts.gast_model as gm
-from synth_pat.paths import Paths
+import gast_model as gm
+from paths import Paths
 
 PROJECT_DIR = os.path.abspath(os.path.join(os.getcwd(), '../..'))
 RESOURCES_DIR = Paths.RESOURCES
@@ -78,7 +78,7 @@ def setup_ja(zscoresdf, weights, pid, mean, std):
         return mean + std * z_scores
     
     # Get patient zscores
-    pid_scores = zscoresdf.loc[int(pid)].drop(index=['age','sex'])
+    pid_scores = zscoresdf.loc[pid].drop(index=['AGE_T0','SEX'])
     
     # Map pid_scores to weights columns
     param_vector = pid_scores

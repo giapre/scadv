@@ -9,6 +9,6 @@ class Paths:
     FIGURES = ROOT / "figures"
     SNAKEMAKE = ROOT / "snakeproject2"
 
-    TYPE_OF_SWEEP = "huifang_ppc_test"
+    TYPE_OF_SWEEP = "huifang_ppc_sweep_correct"
 
 

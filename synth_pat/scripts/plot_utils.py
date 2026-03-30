@@ -354,3 +354,50 @@ def plot_signal_and_matrices(pid, ses, combination, filtered_bold, fcd, var_fcd,
     plt.suptitle(f"Subject {pid}, session {ses}, strategy: {combination}")
     plt.savefig(f"{path}/{pid}_{ses}_{combination}_signal_matrices.png")
     plt.close()
+
+def plot_med_results(y, result_df, pid, save_path):
+    result_df['med_zi_norm'] = result_df.groupby('medication')['med_zi'].transform(lambda x: x - x.min())
+
+    import seaborn as sns
+    import matplotlib.pyplot as plt
+
+    cmap = sns.color_palette("viridis", as_cmap=True)
+
+    point_color = cmap(0.85)  # light green
+    line_color = cmap(0.7)
+
+    g = sns.FacetGrid(
+        result_df,
+        col="medication",
+        col_wrap=2,
+        sharey=True,
+        height=4
+    )
+
+    g.map_dataframe(
+        sns.scatterplot,
+        x="med_zi_norm",
+        y=y,
+        alpha=0.005,
+        color=point_color
+    )
+
+    g.map_dataframe(
+        sns.lineplot,
+        x="med_zi_norm",
+        y=y,
+        estimator="mean",
+        ci=None,
+        color=line_color
+    )
+
+    for ax in g.axes.flatten():
+        ax.set_xlim(0, 19)
+        ax.set_xticks(range(20))
+
+    g.set_axis_labels("med_zi (normalized)", "Improvement score")
+
+    plt.suptitle(pid)
+    plt.tight_layout()
+    plt.savefig(save_path)
+    plt.close()

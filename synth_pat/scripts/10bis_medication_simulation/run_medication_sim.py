@@ -10,15 +10,16 @@ from synth_pat.paths import Paths
 from synth_pat.scripts.simulation_utils import run_bold_sweep
 
 subject_id = sys.argv[1]
-idx = int(sys.argv[2])
-medication = sys.argv[3]
+med_idx = int(sys.argv[2])
+params_idx = int(sys.argv[3])
 output_file = sys.argv[4]
 
 med_dic = pd.read_csv(f'{Paths.RESOURCES}/mediction_sweep_params.csv')
 
-Z_D1 = np.array(med_dic['Z_D1'].values)
-Z_D2 = np.array(med_dic['Z_D2'].values)
-Z_S  = np.array(med_dic['Z_S'].values)
+Z_D1 = float(med_dic.loc[med_idx, 'Z_D1'])
+Z_D2 = float(med_dic.loc[med_idx, 'Z_D2'])
+Z_S  = float(med_dic.loc[med_idx, 'Z_S'])
+medication_name = med_dic.loc[med_idx, 'medication']
 
 med_params = [Z_D1, Z_D2, Z_S]
 
@@ -29,9 +30,10 @@ print(f"Running subject: {subject_id}")
 DERIV_DIR = os.path.join(Paths.DATA, "derivatives", subject_id)
 
 best_params_dic = pd.read_csv(f'{DERIV_DIR}/best_ppc_params_for_medication.csv')
-njdopa_ctx_est = best_params_dic.loc[idx, 'njdopa_ctx']
-njdopa_str_est = best_params_dic.loc[idx, 'njdopa_str']
-ws_est = best_params_dic[idx, 'ws']
+njdopa_ctx_est = float(best_params_dic.loc[params_idx, 'njdopa_ctx'])
+njdopa_str_est = float(best_params_dic.loc[params_idx, 'njdopa_str'])
+ws_est = float(best_params_dic.loc[params_idx, 'ws'])
+est_params = [ws_est, njdopa_ctx_est, njdopa_str_est]
 
 # ------------------------
 # Load subject-specific data
@@ -60,7 +62,7 @@ setup = {
     "num_skip": 10,
     "num_time": 300000,
     "init_state": jp.array([.01, -55.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]).reshape(10,1),
-    "noise": 0.16,
+    "noise": 0.15,
 }
 
 # ------------------------
@@ -95,7 +97,7 @@ theta = gm.sigm_d1d2sero_default_theta._replace(
     Zd1=Z_D1,
     Zd2=Z_D2,
     Zs=Z_S,
-    we=0.3,
+    we=0.4,
     wi=1.,
     wd=1,
     ws=ws_est,
@@ -108,6 +110,4 @@ setup["params"] = theta
 bold = run_bold_sweep((theta, setup))
 bold = np.asarray(bold)
 
-np.savez(output_file, bold=bold, params=med_params, med_params_names=['Z_D1', 'Z_D2', 'Z_S'], est_params=best_params_dic.values.astype('float'), est_params_names=best_params_dic.columns.to_list())
-
-print(f"{subject_id} Done")
+np.savez(output_file, bold=bold, med_params=med_params, med_param_names=['Z_D1', 'Z_D2', 'Z_S'], medication_name = medication_name, est_params=est_params, est_param_names=['ws', 'njdopa_ctx', 'njdopa_str'])

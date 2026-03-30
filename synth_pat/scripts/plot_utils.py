@@ -13,7 +13,7 @@ def plot_bold(bold):
     bold = np.array(bold)
     bold = minmaxscale(bold)
     plt.figure(figsize=(6,12))
-    plt.plot(range(bold.shape[1])+3*bold, linewidth=0.5)
+    plt.plot(range(bold.shape[1])+2*bold, linewidth=0.5)
     plt.show()
 
 def basic_3d_plot(sweep_df, p1_name, 

@@ -6,11 +6,18 @@ from synth_pat.paths import Paths
 
 # With this script I extract the single-stored signals and put them in a single file so I can use the 4, 5, 6 scripts inside scripts
 
+type_of_sweep = Paths.TYPE_OF_SWEEP
 SNAKE_RESULT_DIR = f'{Paths.SNAKEMAKE}/results/'
 
 #type_of_sweep = 'jdopa_ws_sweep'
 for pid in os.listdir(SNAKE_RESULT_DIR):
     results_path = f'{Paths.SNAKEMAKE}/results/{pid}'
+    save_path = f'{Paths.RESULTS}/{pid}/'
+    os.makedirs(save_path, exist_ok = True )
+    save_name = f'{save_path}/{type_of_sweep}.npz'
+    if os.path.exists(save_name):
+        print(f'File already exists, skipping {pid}')
+        continue
 
     pattern = re.compile(
         r"ws(?P<ws>[^_]+)_ctx(?P<ctx>[^_]+)_str(?P<str>.+)\.npz"
@@ -47,9 +54,6 @@ for pid in os.listdir(SNAKE_RESULT_DIR):
         # Save merged file
         # ------------------------
 
-        save_path = f'{Paths.RESULTS}/{pid}/'
-        os.makedirs(save_path, exist_ok = True )
-        save_name = f'{save_path}/bigger_we_bold_sweep.npz'
         np.savez(save_name, bold=bolds, params=params, param_names=['ws', 'njdopa_ctx', 'njdopa_str'])
 
         print("Saved merged file:", save_name)

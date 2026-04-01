@@ -345,7 +345,9 @@ def plot_signal_and_matrices(pid, ses, combination, filtered_bold, fcd, var_fcd,
 
     plt.figure(figsize=(12, 5))
     plt.subplot(131)
-    plt.plot(2*filtered_bold/filtered_bold.max(axis=0) + np.arange(filtered_bold.shape[1]), linewidth=0.5)
+    bold_max = filtered_bold.max(axis=0)
+    bold_min = filtered_bold.min(axis=0)
+    plt.plot(2*((filtered_bold-bold_min)/(bold_max-bold_min)) + np.arange(filtered_bold.shape[1]), linewidth=0.5)
     plt.title("Filtered BOLD signals")
     plt.subplot(132)
     plt.imshow(fcd, cmap='viridis')

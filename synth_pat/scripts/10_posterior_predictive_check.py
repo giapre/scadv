@@ -35,7 +35,7 @@ for n_iter in range(500):
     njdopa_ctx_est = 10**np.random.choice(post_distr_arr['njdopa_ctx'])
     njdopa_str_est = 10**np.random.choice(post_distr_arr['njdopa_str'])      # sub-XXXX
     params = [ws_est, njdopa_ctx_est, njdopa_str_est]
-    param_names = ['wst', 'njdopa_ctx', 'njdopa_str']
+    param_names = ['ws', 'njdopa_ctx', 'njdopa_str']
 
     # ------------------------
     # Load subject-specific data

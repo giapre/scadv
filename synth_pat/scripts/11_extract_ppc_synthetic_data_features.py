@@ -1,4 +1,4 @@
-from analysis_utils import compute_features, make_roi_alff_df, make_roi_fc_mean_df, make_roi_fc_couples_df, fcd_variance_excluding_overlap
+from analysis_utils import compute_features, make_roi_alff_df, make_roi_fc_mean_df, make_roi_fc_couples_df, fcd_variance_excluding_overlap, do_pca
 import pandas as pd
 import numpy as np
 import os
@@ -17,6 +17,11 @@ if not os.path.exists(GEN_RESULTS_DIR):
 emp_data_csv = f'{GEN_RESULTS_DIR}/{subject_id}_{ses}_{type_of_confounds}_extracted_emp_features.csv'
 if not os.path.exists(emp_data_csv):
     print("Empirical data don't exist!")
+    sys.exit()
+
+sweep_data_csv = f'{GEN_RESULTS_DIR}/simulations/{subject_id}_{ses}_{type_of_sweep}_extracted_features.csv'
+if not os.path.exists(sweep_data_csv):
+    print("Base sweep data don't exist!")
     sys.exit()
 
 RESULTS_DIR = f"{GEN_RESULTS_DIR}/post_pred_check/"
@@ -84,19 +89,17 @@ if subject_id.startswith('sub-'):
         print(f"Features saved at {output_file}")
 
         print(f'Now getting only the 100 best')
-        emp_df = pd.read_csv(emp_data_csv)
-        feat_cols = [col for col in final_df.columns if col not in param_names]
+        emp_df = pd.read_csv(emp_data_csv) # empirical features
+        sweep_df = pd.read_csv(sweep_data_csv) # features from the general sweep 
+        feat_cols = [col for col in final_df.columns if col not in param_names] # removing the parameters
         emp_data = emp_df[feat_cols].iloc[0]
+        sweep_data = sweep_df[feat_cols]
 
-        err_line = []
-        for i in final_df.index:
-            line_feat = final_df.loc[i,feat_cols]
-            err_line.append(np.sum(np.abs(line_feat - emp_data)))
-
-        err_line = np.array(err_line)
-        best_idx = np.argsort(err_line)[:100]
-        best_params = final_df.loc[best_idx]
-        best_params.to_csv(f'{RESULTS_DIR}/{subject_id}_{ses}_{type_of_confounds}_{type_of_sweep}_best_100_PPC.csv')
+        sweep_r, ppc_r, emp_r = do_pca(sweep_data, final_df, emp_data)
+        err_line = np.linalg.norm(ppc_r - emp_r, axis=1) # error between post pred check and empirical, in pca space
+        best_idx = np.argsort(err_line)[:100] # keeping 100 best points
+        best_params = final_df.iloc[best_idx]
+        best_params.to_csv(f'{RESULTS_DIR}/{subject_id}_{ses}_{type_of_confounds}_{type_of_sweep}_best_100pca_PPC.csv')
 
         print('Now printing the images')
 
@@ -104,7 +107,10 @@ if subject_id.startswith('sub-'):
         fig_path = f'{RESULTS_DIR}/figures/'
         os.makedirs(fig_path, exist_ok=True)
         for i in range(bold_all.shape[2])[::10]:
-            combination = f'{param_names[0]}:{np.round(params[i,0],4)}__{param_names[1]}:{np.round(params[i,1],4)}__{param_names[2]}:{np.round(params[i,2],4)}'
+            p1 = np.round(params[i,0],4)
+            p2 = np.round(params[i,1],4)
+            p3 = np.round(params[i,2],4)
+            combination = f'PCA__{param_names[0]}:{p1}__{param_names[1]}:{p2}__{param_names[2]}:{p3}'
             plot_signal_and_matrices(pid=subject_id, ses=f'{ses} {type_of_confounds}', combination=combination, filtered_bold=bold_all[:,:,i], fcd=sim_fcd[:,:,i], var_fcd=sim_var_fcd[i], fc=sim_fc[:,:,i], mean_fc=sim_gbc[i], path=fig_path)
         
         print(f"Figures saved at {fig_path}")

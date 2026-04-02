@@ -5,39 +5,34 @@ import pandas as pd
 import numpy as np 
 import os
 import sys
+from plot_utils import save_feat_and_color_by_param_for_ppc, basic_3d_sweep_plot_with_planes_for_ppc
 
 subject_id = sys.argv[1]
-RESULTS_DIR = f"{Paths.DERIVATIVES}/freesurfer/{subject_id}/pipe"
+ses = sys.argv[2]
+RESULTS_DIR = f"{Paths.DERIVATIVES}/freesurfer/{subject_id}_{ses}/pipe"
+if not os.path.exists(RESULTS_DIR):
+    RESULTS_DIR = f"{Paths.DERIVATIVES}/freesurfer/{subject_id}_ses-t0/pipe"
+PPC_DIR = f"{RESULTS_DIR}/post_pred_check"
 type_of_sweep =  Paths.TYPE_OF_SWEEP
-print(f'doing {subject_id}, {type_of_sweep}')
+type_of_confunds = Paths.TYPE_OF_CONFOUNDS
+print(f'doing {subject_id}, {type_of_sweep}, {type_of_confunds}')
 
-feat_file = f"{RESULTS_DIR}/simulations/{subject_id}_{type_of_sweep}_extracted_features.csv"
-outpath = f'{RESULTS_DIR}/figures/'
+sweep_file = f"{RESULTS_DIR}/simulations/{subject_id}_{ses}_{type_of_sweep}_extracted_features.csv"
+ppc_file = f"{PPC_DIR}/{subject_id}_{ses}_{type_of_confunds}_{type_of_sweep}_best_100_PPC.csv"
+emp_file = f"{RESULTS_DIR}/{subject_id}_{ses}_{type_of_confunds}_extracted_emp_features.csv"
+outpath = f'{PPC_DIR}/figures/{ses}_{type_of_confunds}_{type_of_sweep}/'
 os.makedirs(outpath, exist_ok=True)
 
-feat_df = pd.read_csv(feat_file, index_col=0)
+sweep_df = pd.read_csv(sweep_file, index_col=0)
+ppc_df = pd.read_csv(ppc_file, index_col=0)
+emp_df = pd.read_csv(emp_file, index_col=0)
 
 params =['ws', 'njdopa_ctx', 'njdopa_str']
 p1_name, p2_name, p3_name = params
+vars_x_dic = {'ws': 'serotonin', 'njdopa_ctx': 'cortical dopamine', 'njdopa_str': 'striatal dopamine'}
+sweep_df[params] = np.log10(sweep_df[params])
+ppc_df[params] = np.log10(ppc_df[params])
 
-#fig = plt.figure(figsize=(10,10))
-#sns.heatmap(feat_df.corr(), cmap='coolwarm')
-#plt.savefig(f"{Paths.FIGURES}/{type_of_sweep}/correlation_heatmap.png")
-#plt.close()
-
-#plt.figure(figsize=(12,4))
-#plt.subplot(121)
-#sns.barplot(feat_df.corr()[p2_name])
-#plt.xticks(rotation=90)
-#plt.title(f'{p2_name} correlation')
-#plt.subplot(122)
-#sns.barplot(feat_df.corr()[p3_name])
-#plt.title(f'{p3_name} correlation')
-#plt.xticks(rotation=90);
-#plt.savefig(f"{Paths.FIGURES}/{type_of_sweep}/correlation_{p2_name}_{p3_name}.png")
-#plt.close()
-
-#from synth_pat.scripts.plot_utils import plot_2d_heatmaps
 metrics = ['VAR_FCD',
 'GBC',
 'L.CA_FC',
@@ -47,74 +42,18 @@ metrics = ['VAR_FCD',
 'L.PTR_ALFF',
 'L.HI_ALFF',
 'L.CACG_ALFF']
-
-#columns=p2_name
-#index=p3_name
-
-#for wx_value in np.unique(feat_df[p1_name]):
-#    plot_df = feat_df[feat_df[p1_name]==wx_value]
-#    title=f'{p1_name}={wx_value}'
-#    plot_2d_heatmaps(plot_df, title, metrics, columns, index, outpath)
+cmap='viridis'
+for var_to_plot in metrics:
+    save_name = f'{outpath}/3d_{var_to_plot}_best_100_ppc'
+    basic_3d_sweep_plot_with_planes_for_ppc(sweep_df, ppc_df, p1_name, p2_name, p3_name, var_to_plot, vars_x_dic, cmap, save_name)
 
 # === PCA ===
 
 from analysis_utils import do_pca
+cols = [col for col in sweep_df.columns if col not in params]
+sweep_r, ppc_r, emp_r = do_pca(sweep_df[cols], ppc_df, emp_df)
+out_name = f'{outpath}/{ses}_{type_of_confunds}_{type_of_sweep}_best_100_ppc_pca'
+save_feat_and_color_by_param_for_ppc(params, sweep_r, ppc_r, emp_r, sweep_df, out_name)
 
-X_r, pca = do_pca(feat_df.dropna())
-from plot_utils import save_feat_and_color_by_param
-
-scatter0 = X_r[:,0]
-scatter1 = X_r[:,1]
-save_feat_and_color_by_param(params, scatter0, scatter1, feat_df.dropna(), outpath)
-
-from analysis_utils import pca_feature_importance
-importance = pca_feature_importance(feat_df, pca)
-
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-
-# Parameters
-
-pc1_corr = [
-    np.corrcoef(X_r[:, 0], feat_df[p])[0, 1]
-    for p in params]
-
-pc2_corr = [
-    np.corrcoef(X_r[:, 1], feat_df[p])[0, 1]
-    for p in params]
-
-importance_params = importance.loc[
-    importance.index.intersection(params)
-]
-
-# === PCA Features Importance ===
-fig, axes = plt.subplots(1, 3, figsize=(10, 4))
-
-axes[0].bar(params, importance_params.values)
-axes[0].set_title("Feature Importance")
-axes[0].set_ylabel("Absolute Loading")
-
-# RIGHT: Correlation with PC1
-axes[1].bar(params, pc1_corr)
-axes[1].set_title("Correlation with PC1")
-axes[1].set_ylabel("Pearson r")
-# RIGHT: Correlation with PC1
-axes[2].bar(params, pc2_corr)
-axes[2].set_title("Correlation with PC2")
-axes[2].set_ylabel("Pearson r")
-
-plt.tight_layout()
-savepath = f'{outpath}/pca_feat_importance.png'
-plt.savefig(savepath)
-
-feat_df['ws'] = np.log10(feat_df['ws'])
-
-# === 3D PLOTS WITH HISTOGRAMS ===
-
-from plot_utils import plot_hist_and_3d
-for var_to_plot in feat_df.columns:
-    plot_hist_and_3d(feat_df, p1_name, p2_name, p3_name, var_to_plot, outpath)
-
-print("Done!")
+print('Done!')
 

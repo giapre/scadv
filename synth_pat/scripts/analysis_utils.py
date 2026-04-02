@@ -313,17 +313,26 @@ def drop_high_corr_features(feat_df):
 
     return feat_df_reduced
 
-def do_pca(X):
+def do_pca(sweep_df, ppc_df, emp_df):
     from sklearn.decomposition import PCA
     from sklearn.preprocessing import StandardScaler
 
-    X_scaled = StandardScaler().fit_transform(X)
+    sweep_reduced = drop_high_corr_features(sweep_df)
+    ppc_reduced = ppc_df[sweep_reduced.columns]
+    emp_reduced = emp_df[sweep_reduced.columns]
+
+    scaler = StandardScaler()
+    sweep_scaled = scaler.fit_transform(sweep_reduced.values)
+    ppc_scaled = scaler.transform(ppc_reduced.values)
+    emp_scaled = scaler.transform(emp_reduced.values.reshape(1,-1))
 
     # PCA projection
-    pca = PCA(n_components=2)
-    X_r = pca.fit_transform(X_scaled)
+    pca = PCA(n_components=5)
+    sweep_r = pca.fit_transform(sweep_scaled)
+    ppc_r = pca.transform(ppc_scaled)
+    emp_r = pca.transform(emp_scaled)
 
-    return X_r, pca
+    return sweep_r, ppc_r, emp_r
 
 def pca_feature_importance(X, pca):
     loadings = pd.DataFrame(

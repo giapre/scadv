@@ -358,3 +358,151 @@ def plot_signal_and_matrices(pid, ses, combination, filtered_bold, fcd, var_fcd,
     plt.suptitle(f"Subject {pid}, session {ses}, strategy: {combination}")
     plt.savefig(f"{path}/{pid}_{ses}_{combination}_signal_matrices.png")
     plt.close()
+
+def basic_3d_sweep_plot_with_planes_for_ppc(sweep_df, ppc_df, p1_name, 
+                                    p2_name, p3_name, var_to_plot, vars_x_dic, cmap, save_dir):
+    import numpy as np
+    import matplotlib.pyplot as plt
+    from scipy.interpolate import griddata
+
+    # ---------------------------------------
+    # Extract data
+    # ---------------------------------------
+    x = sweep_df[p1_name].astype(float).values
+    y = sweep_df[p2_name].astype(float).values
+    z = sweep_df[p3_name].astype(float).values
+    c = sweep_df[var_to_plot].astype(float).values
+
+    l = ppc_df[p1_name].astype(float).values
+    m = ppc_df[p2_name].astype(float).values
+    n = ppc_df[p3_name].astype(float).values
+
+    # ---------------------------------------
+    # Point sizes scaled by variable
+    # ---------------------------------------
+    if c.max() == c.min():
+        sizes = np.ones_like(c) * 10
+    else:
+        sizes = 1 + (5*(c - c.min()) / (c.max() - c.min()))**4
+
+    # ---------------------------------------
+    # Create figure
+    # ---------------------------------------
+    fig = plt.figure(figsize=(9, 7))
+    ax = fig.add_subplot(111, projection='3d')
+
+    sc = ax.scatter(x, y, z, c=c, cmap=cmap, s=sizes, alpha=0.5, edgecolors='none')
+    ax.scatter(l, m, n, c='r', alpha=1, s=20)
+
+    # ---------------------------------------
+    # Interpolation grids for planes
+    # ---------------------------------------
+    xi = np.linspace(x.min(), x.max(), 40)
+    yi = np.linspace(y.min(), y.max(), 40)
+    zi = np.linspace(z.min(), z.max(), 40)
+
+    XI, YI = np.meshgrid(xi, yi)
+    XI2, ZI = np.meshgrid(xi, zi)
+    YI2, ZI2 = np.meshgrid(yi, zi)
+
+    # Interpolate values for contour planes
+    C_xy = griddata((x, y), c, (XI, YI), method='linear')
+    C_xz = griddata((x, z), c, (XI2, ZI), method='linear')
+    C_yz = griddata((y, z), c, (YI2, ZI2), method='linear')
+
+    # ---------------------------------------
+    # Add padding
+    # ---------------------------------------
+    pad = 0.15
+    xr, yr, zr = x.max() - x.min(), y.max() - y.min(), z.max() - z.min()
+    xmin, xmax = x.min() - pad*xr, x.max() + pad*xr
+    ymin, ymax = y.min() - pad*yr, y.max() + pad*yr
+    zmin, zmax = z.min() - pad*zr, z.max() + pad*zr
+    ax.set_xlim(xmin, xmax)
+    ax.set_ylim(ymin, ymax)
+    ax.set_zlim(zmin, zmax)
+
+    # ---------------------------------------
+    # Contour planes on cube walls
+    # ---------------------------------------
+    ax.contourf(XI, YI, C_xy, zdir='z', offset=zmin, cmap=cmap, levels=15, alpha=0.3)
+    ax.contourf(XI2, C_xz, ZI, zdir='y', offset=ymax, cmap=cmap, levels=15, alpha=0.3)
+    ax.contourf(C_yz, YI2, ZI2, zdir='x', offset=xmin, cmap=cmap, levels=15, alpha=0.3)
+
+    # ---------------------------------------
+    # Labels and colorbar
+    # ---------------------------------------
+    ax.set_xlabel(vars_x_dic[p1_name])
+    ax.set_ylabel(vars_x_dic[p2_name])
+    ax.set_zlabel(vars_x_dic[p3_name])
+    ax.set_title(f'3D Scatter of {var_to_plot}')
+
+    cbar = fig.colorbar(sc, shrink=0.6, pad=0.1, label=var_to_plot)
+    cbar.outline.set_visible(False)
+    cbar.ax.tick_params(width=0.5, labelsize=10)
+
+    ax.grid(False)
+    plt.tight_layout()
+    plt.savefig(f'{save_dir}.png')
+    plt.close()
+
+def save_feat_and_color_by_param_for_ppc(params, sweep_r, ppc_r, emp_r, feat_df, outpath):
+    import numpy as np
+    import matplotlib.pyplot as plt
+
+    fig, axes = plt.subplots(1, len(params), figsize=(6 * len(params), 5))
+
+    # If only one param, axes is not iterable
+    if len(params) == 1:
+        axes = [axes]
+
+    for ax, param in zip(axes, params):
+
+        # --- Color for sweep points ---
+
+        c = feat_df[param].astype(float)
+
+        # --- Sweep (background cloud) ---
+        sc = ax.scatter(
+            sweep_r[:, 0],
+            sweep_r[:, 1],
+            c=c,
+            cmap='viridis',
+            alpha=0.5,
+            s=20,
+            label='Sweep'
+        )
+
+        # --- PPC (red points) ---
+        ax.scatter(
+            ppc_r[:, 0],
+            ppc_r[:, 1],
+            color='red',
+            alpha=0.8,
+            s=40,
+            label='PPC'
+        )
+
+        # --- Empirical (big black dot) ---
+        ax.scatter(
+            emp_r[:, 0],
+            emp_r[:, 1],
+            color='black',
+            s=120,
+            edgecolor='white',
+            linewidth=1.5,
+            label='Empirical',
+            zorder=5
+        )
+
+        ax.set_title(f'Colored by {param}')
+        ax.set_xlabel('PC1')
+        ax.set_ylabel('PC2')
+
+        fig.colorbar(sc, ax=ax)
+        ax.legend()
+
+    plt.tight_layout()
+    savepath = f'{outpath}.png'
+    plt.savefig(savepath, dpi=300)
+    plt.close()

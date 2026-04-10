@@ -135,7 +135,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Plot DK annotation surface values")
     parser.add_argument("--title", type=str, default='Normalized ALFF across regions',
                         help="Title of the plot")
-    parser.add_argument("--df_annot_dir", type=str, default='/Users/giacomopreti/Desktop/VBT/synthetic-patient/results/alff_for_figure.csv',
+    parser.add_argument("--df_annot_dir", type=str, default='/Users/giacomopreti/Desktop/VBT/synthetic-patient/results/alff_for_figure_another_pat.csv',
                         help="The path to the annotation df")
     parser.add_argument("--pat_name", type=str, default='sub-001',
                         help="Subject name (e.g., 'sub-001')")

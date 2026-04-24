@@ -13,48 +13,33 @@ ses = sys.argv[2]
 RESULTS_DIR = f"{Paths.DERIVATIVES}/freesurfer/{subject_id}_{ses}/pipe"
 if not os.path.exists(RESULTS_DIR):
     RESULTS_DIR = f"{Paths.DERIVATIVES}/freesurfer/{subject_id}_ses-t0/pipe"
-PPC_DIR = f"{RESULTS_DIR}/post_pred_check"
+MED_DIR = f"{RESULTS_DIR}/medication"
 type_of_sweep =  Paths.TYPE_OF_SWEEP
 type_of_confunds = Paths.TYPE_OF_CONFOUNDS
+demo = pd.read_csv(Paths.DEMO, index_col='PSN')
+subject_id_idx = int(subject_id.split('-')[1])
+remission = demo.loc[subject_id_idx, 'Remission']
 print(f'doing {subject_id}, {type_of_sweep}, {type_of_confunds}')
 
 sweep_file = f"{RESULTS_DIR}/simulations/{subject_id}_{ses}_{type_of_sweep}_extracted_features.csv"
-ppc_file = f"{PPC_DIR}/{subject_id}_{ses}_{type_of_confunds}_{type_of_sweep}_best_100pca_PPC.csv"
-emp_file = f"{RESULTS_DIR}/{subject_id}_{ses}_{type_of_confunds}_extracted_emp_features.csv"
-outpath = f'{PPC_DIR}/figures/{ses}_{type_of_confunds}_{type_of_sweep}/'
+med_file = f"{MED_DIR}/{subject_id}_{ses}_{type_of_confunds}_{type_of_sweep}_medication_effect_extracted_features.csv"
+base_emp_file = f"{RESULTS_DIR}/{subject_id}_ses-t0_{type_of_confunds}_extracted_emp_features.csv"
+fup_emp_file = f"{RESULTS_DIR}/{subject_id}_ses-t1_{type_of_confunds}_extracted_emp_features.csv"
+outpath = f'{MED_DIR}/figures/{type_of_confunds}_{type_of_sweep}/'
 os.makedirs(outpath, exist_ok=True)
 
 sweep_df = pd.read_csv(sweep_file, index_col=0)
-ppc_df = pd.read_csv(ppc_file, index_col=0)
-emp_df = pd.read_csv(emp_file, index_col=0)
+med_df = pd.read_csv(med_file, index_col=0)
+base_emp_df = pd.read_csv(base_emp_file, index_col=0)
+fup_emp_df = pd.read_csv(fup_emp_file, index_col=0)
+emp_pid_data = base_emp_df.iloc[0]
+emp_pid_fup_data = fup_emp_df.iloc[0]
 
 params =['ws', 'njdopa_ctx', 'njdopa_str']
 p1_name, p2_name, p3_name = params
 vars_x_dic = {'ws': 'serotonin', 'njdopa_ctx': 'cortical dopamine', 'njdopa_str': 'striatal dopamine'}
 sweep_df[params] = np.log10(sweep_df[params])
-ppc_df[params] = np.log10(ppc_df[params])
-
-metrics = ['VAR_FCD',
-'GBC',
-'L.CA_FC',
-'L.CA-L.CER',
-'L.CA_ALFF',
-'R.CA_ALFF',
-'L.PTR_ALFF',
-'L.HI_ALFF',
-'L.CACG_ALFF']
-cmap='viridis'
-for var_to_plot in metrics:
-    save_name = f'{outpath}/3d_{var_to_plot}_best_100_ppc'
-    basic_3d_sweep_plot_with_planes_for_ppc(sweep_df, ppc_df, p1_name, p2_name, p3_name, var_to_plot, vars_x_dic, cmap, save_name)
-
-# === PCA ===
-
-from analysis_utils import do_pca
-cols = [col for col in sweep_df.columns if col not in params]
-sweep_r, ppc_r, emp_r = do_pca(sweep_df[cols], ppc_df, emp_df)
-out_name = f'{outpath}/{ses}_{type_of_confunds}_{type_of_sweep}_best_100pca_ppc_pca'
-save_feat_and_color_by_param_for_ppc(params, sweep_r, ppc_r, emp_r, sweep_df, out_name)
+med_df[params] = np.log10(med_df[params])
 
 feat_dic = {'L.PU-L.CACG': 'Left Putamen - Caudal Anterior Cingulum',
 'L.PU-L.RACG': 'Left Putamen - Rostral Anterior Cingulum',
@@ -67,11 +52,12 @@ feat_dic = {'L.PU-L.CACG': 'Left Putamen - Caudal Anterior Cingulum',
 'VAR_FCD': 'Fluidity',
 'GBC': 'Global Brain Coupling'}
 
-tp = [p for p in ppc_df.columns if p not in ['ws', 'njdopa_ctx', 'njdopa_str', 'Z_D1', 'Z_D2','Z_S', 'medication', 'med_zi']]
 for p in feat_dic.keys():
     print(f'\n ========= {p} ========= \n')
-    p2 = p
+    p2 = p#-R.HI'
     p1 = 'L.PU-L.IN'
+    #p1 ='GBC'
+    #p2 = 'VAR_FCD'
 
     viridis = cm.get_cmap("viridis")
 
@@ -87,19 +73,50 @@ for p in feat_dic.keys():
         label="Parameter sweep"
     )
 
+    #ax.scatter(
+    #    ppc_df[p1],
+    #    ppc_df[p2],
+    #    color='r',   # light blue from viridis
+    #    alpha=0.2,
+    #    s=15,
+    #    label="Parameter sweep"
+    #)
+
+    # --- Medicated subjects colored by Z_D2 ---
+    # Get unique medication types
+    med_types = med_df['medication'].unique()
+
+    # Create color map
+    cmap = cm.get_cmap("viridis", len(med_types))
+
+    # Loop over medication types
+    for i, med in enumerate(med_types):
+        sub_df = med_df[med_df['medication'] == med]
+
+        ax.scatter(
+            sub_df[p1],
+            sub_df[p2],
+            color=cmap(i),
+            s=20,
+            alpha=0.5,
+            edgecolor="white",
+            label=med
+        )
+
+    # --- Healthy condition ---
     ax.scatter(
-        ppc_df[p1],
-        ppc_df[p2],
-        color='r',  
-        alpha=0.2,
-        s=15,
-        label="PPC"
+        emp_pid_fup_data[p1],
+        emp_pid_fup_data[p2],
+        color=viridis(0.9),   # dark purple
+        s=120,
+        #edgecolor="white",
+        label="Medicated condition"
     )
 
     # --- Unmedicated condition ---
     ax.scatter(
-        emp_df.loc[0,p1],
-        emp_df.loc[0,p2],
+        emp_pid_data[p1],
+        emp_pid_data[p2],
         color=viridis(0.05),   # dark purple
         s=120,
         edgecolor="white",
@@ -110,17 +127,16 @@ for p in feat_dic.keys():
     ax.set_xlabel(feat_dic[p1])
     ax.set_ylabel(feat_dic[p2])
 
-    # --- Colorbar for Z_D2 ---
-    #cbar = plt.colorbar(sc, ax=ax)
-    #cbar.set_label("Z_D2")
-
     # --- Style ---
     ax.grid(True, color="lightgray", linewidth=0.6, alpha=0.7)
     for spine in ax.spines.values():
         spine.set_color("lightgray")
 
     ax.legend(frameon=False)
-    plt.title(f'{subject_id}'   )
+
     plt.tight_layout()
-    plt.savefig(f'{outpath}/{p}_best_100pca_ppc.png')
+    plt.title(f'{subject_id}, remission: {remission}')
+    plt.savefig(f'{outpath}/{p}_med_effect.png')
     plt.close()
+
+print('Done!')

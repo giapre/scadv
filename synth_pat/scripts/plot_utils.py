@@ -506,3 +506,199 @@ def save_feat_and_color_by_param_for_ppc(params, sweep_r, ppc_r, emp_r, feat_df,
     savepath = f'{outpath}.png'
     plt.savefig(savepath, dpi=300)
     plt.close()
+
+def plot_med_results(y, result_df, pid, remission, save_path):
+    result_df['med_zi_norm'] = result_df.groupby('medication')['med_zi'].transform(lambda x: x - x.min() + 1e-3)
+
+    import seaborn as sns
+    import matplotlib.pyplot as plt
+
+    cmap = sns.color_palette("viridis", as_cmap=True)
+
+    point_color = cmap(0.6)  
+    line_color = cmap(0.7)
+
+    g = sns.FacetGrid(
+        result_df,
+        col="medication",
+        col_wrap=2,
+        sharey=True,
+        height=4
+    )
+
+    g.map_dataframe(
+        sns.scatterplot,
+        x="med_zi_norm",
+        y=y,
+        alpha=0.007,
+        color=point_color
+    )
+
+    g.map_dataframe(
+        sns.lineplot,
+        x="med_zi_norm",
+        y=y,
+        estimator="mean",
+        ci=None,
+        color=line_color
+    )
+
+    for ax in g.axes.flatten():
+        #ax.set_xlim(0, 19)
+        #ax.set_xticks(range(20))
+        ax.set_xlim(left=0.5*1e0)
+        ax.set_xscale('log')
+
+    g.set_axis_labels("med_zi (log scale)", "Improvement score")
+
+    plt.suptitle(f'{pid}, remission: {remission}')
+    plt.tight_layout()
+    plt.savefig(save_path)
+    plt.close()
+
+
+def save_feat_and_color_by_param_for_med(params, medication, sweep_r, med_r, base_emp_r, fup_emp_r, sweep_df, remission, outpath):
+    import matplotlib.pyplot as plt
+    cmap = plt.cm.viridis
+    purple = cmap(0.1)   # dark purple
+    green = cmap(0.6)    # green
+    yellow = cmap(0.95)  # yellow
+
+    fig, axes = plt.subplots(1, len(params), figsize=(6 * len(params), 5))
+
+    # If only one param, axes is not iterable
+    if len(params) == 1:
+        axes = [axes]
+
+    for ax, param in zip(axes, params):
+
+        # --- Color for sweep points ---
+
+        c = sweep_df[param].astype(float)
+
+        # --- Sweep (background cloud) ---
+        sc = ax.scatter(
+            sweep_r[:, 0],
+            sweep_r[:, 1],
+            c=c,
+            cmap='viridis',
+            alpha=0.5,
+            s=20,
+            label='Sweep'
+        )
+
+        # --- Medication (yellow points) ---
+        ax.scatter(
+            med_r[:, 0],
+            med_r[:, 1],
+            color='orange',
+            alpha=0.8,
+            s=40,
+            label=medication
+        )
+
+        # --- Empirical (big purple dot) ---
+        ax.scatter(
+            base_emp_r[:, 0],
+            base_emp_r[:, 1],
+            color=purple,
+            s=120,
+            edgecolor='white',
+            linewidth=1.5,
+            label='Baseline',
+            zorder=5
+        )
+
+        # --- Medication empirical (big green dot) ---
+        ax.scatter(
+            fup_emp_r[:, 0],
+            fup_emp_r[:, 1],
+            color=green,
+            s=120,
+            edgecolor='white',
+            linewidth=1.5,
+            label='Follow-up',
+            zorder=5
+        )
+
+        ax.set_title(f'Colored by {param} for {medication}, remission: {remission}')
+        ax.set_xlabel('PC1')
+        ax.set_ylabel('PC2')
+
+        fig.colorbar(sc, ax=ax)
+        ax.legend()
+
+    plt.tight_layout()
+    savepath = f'{outpath}'
+    plt.savefig(savepath, dpi=300)
+    plt.close()
+
+def plot_pca_with_base_med_and_emp(medication, sweep_r, med_r, ppc_r, base_emp_r, fup_emp_r, med_df, remission, outpath):
+    import matplotlib.pyplot as plt
+    cmap = plt.cm.viridis
+    purple = cmap(0.1)   # dark purple
+    green = cmap(0.6)    # green
+    yellow = cmap(0.95)  # yellow
+
+    fig = plt.figure(figsize=(6, 5))
+
+    # --- Color for sweep points ---
+
+    c = med_df['med_zi'].astype(float)
+
+    # --- Sweep (background cloud) ---
+    sc = ax.scatter(
+        sweep_r[:, 0],
+        sweep_r[:, 1],
+        c=c,
+        cmap='viridis',
+        alpha=0.5,
+        s=20,
+        label='Sweep'
+    )
+
+    # --- Medication (yellow points) ---
+    ax.scatter(
+        med_r[:, 0],
+        med_r[:, 1],
+        color='orange',
+        alpha=0.8,
+        s=40,
+        label=medication
+    )
+
+    # --- Empirical (big purple dot) ---
+    ax.scatter(
+        base_emp_r[:, 0],
+        base_emp_r[:, 1],
+        color=purple,
+        s=120,
+        edgecolor='white',
+        linewidth=1.5,
+        label='Baseline',
+        zorder=5
+    )
+
+    # --- Medication empirical (big green dot) ---
+    ax.scatter(
+        fup_emp_r[:, 0],
+        fup_emp_r[:, 1],
+        color=green,
+        s=120,
+        edgecolor='white',
+        linewidth=1.5,
+        label='Follow-up',
+        zorder=5
+    )
+
+    ax.set_title(f'Colored by {param} for {medication}, remission: {remission}')
+    ax.set_xlabel('PC1')
+    ax.set_ylabel('PC2')
+
+    fig.colorbar(sc, ax=ax)
+    ax.legend()
+
+    plt.tight_layout()
+    savepath = f'{outpath}'
+    plt.savefig(savepath, dpi=300)
+    plt.close()

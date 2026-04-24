@@ -33,7 +33,7 @@ if subject_id.startswith('sub-'):
     output_file = f'{RESULTS_DIR}/{subject_id}_{ses}_{type_of_confounds}_{type_of_sweep}_PPC_extracted_features.csv'
     if os.path.isfile(output_file):
         print(f'{output_file} already exists! Terminating here')
-        #sys.exit()
+        sys.exit()
 
     if os.path.isfile(input_file):
         print ("File exists")

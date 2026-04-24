@@ -11,14 +11,14 @@ from simulation_utils import run_bold_sweep
 
 subject_id = sys.argv[1]
 ses = sys.argv[2]
-type_of_sim = Paths.TYPE_OF_SWEEP
+type_of_sweep = Paths.TYPE_OF_SWEEP
 type_of_confounds = Paths.TYPE_OF_CONFOUNDS
 PID_DERIV_DIR = os.path.join(Paths.DERIVATIVES, "freesurfer", f'{subject_id}_{ses}/pipe')
 if not os.path.exists(PID_DERIV_DIR):
     PID_DERIV_DIR = os.path.join(Paths.DERIVATIVES, "freesurfer", f'{subject_id}_ses-t0/pipe')
 
 med_dic = pd.read_csv(f'{Paths.RESOURCES}/mediction_sweep_params.csv')
-best_params_file = pd.read_csv(f'{PID_DERIV_DIR}/post_pred_check/{subject_id}_{ses}_{type_of_confounds}_{type_of_sweep}_best_100pca_PPC.csv')
+best_params_df = pd.read_csv(f'{PID_DERIV_DIR}/post_pred_check/{subject_id}_{ses}_{type_of_confounds}_{type_of_sweep}_best_100pca_PPC.csv')
 
 SWEEP_RES_DIR = f'{PID_DERIV_DIR}/medication/simulations'
 os.makedirs(SWEEP_RES_DIR, exist_ok=True)
@@ -26,13 +26,13 @@ os.makedirs(SWEEP_RES_DIR, exist_ok=True)
 # Load subject-specific data
 # ------------------------
 
-L = pd.read_csv(os.path.join(DERIV_DIR, "dk_lengths_with_sero_and_dopa.csv"), index_col=0)
+L = pd.read_csv(os.path.join(PID_DERIV_DIR, "dk_lengths_with_sero_and_dopa.csv"), index_col=0)
 regions_names = L.columns.to_list()
 
-Ceids = np.load(os.path.join(DERIV_DIR, "Ceids.npy"))
-idelays = np.load(os.path.join(DERIV_DIR, "idelays.npy"))
-Ja = np.load(os.path.join(DERIV_DIR, "Ja.npy"))
-Rd1, Rd2, Rsero = np.load(os.path.join(DERIV_DIR, "Receptors.npy"))
+Ceids = np.load(os.path.join(PID_DERIV_DIR, "Ceids.npy"))
+idelays = np.load(os.path.join(PID_DERIV_DIR, "idelays.npy"))
+Ja = np.load(os.path.join(PID_DERIV_DIR, "Ja.npy"))
+Rd1, Rd2, Rsero = np.load(os.path.join(PID_DERIV_DIR, "Receptors.npy"))
 
 # ------------------------
 # Model setup
@@ -54,7 +54,7 @@ setup = {
 
 # Sweep over medication and estimated parameters 
 
-for med_ix in med_dic.index:
+for med_idx in med_dic.index:
 
     Z_D1 = float(med_dic.loc[med_idx, 'Z_D1'])
     Z_D2 = float(med_dic.loc[med_idx, 'Z_D2'])
@@ -64,18 +64,19 @@ for med_ix in med_dic.index:
 
     med_params = [Z_D1, Z_D2, Z_S]
 
-    print(f"Running subject: {subject_id}")
+    print(f"Running subject: {subject_id}, {medication_name}, {med_idx}")
 
-    for params_idx in best_params_dic.index:
+    for params_idx in best_params_df.index[:50]:
 
-        output_file = f'{SWEEP_RES_DIR}/{medication_name}_{med_zi}_{params_idx}.npz'
+        output_file = f'{SWEEP_RES_DIR}/{medication_name}_zi_{med_zi}_params_{params_idx}.npz'
         if os.path.exists(output_file):
             print('Simulation already exists, going to next one')
             continue
 
-        njdopa_ctx_est = float(best_params_dic.loc[params_idx, 'njdopa_ctx'])
-        njdopa_str_est = float(best_params_dic.loc[params_idx, 'njdopa_str'])
-        ws_est = float(best_params_dic.loc[params_idx, 'ws'])
+        print(f"Running subject: {subject_id}, {medication_name}_{med_idx}, params_idx: {params_idx}")
+        njdopa_ctx_est = float(best_params_df.loc[params_idx, 'njdopa_ctx'])
+        njdopa_str_est = float(best_params_df.loc[params_idx, 'njdopa_str'])
+        ws_est = float(best_params_df.loc[params_idx, 'ws'])
         est_params = [ws_est, njdopa_ctx_est, njdopa_str_est]
 
         # ------------------------
@@ -123,4 +124,6 @@ for med_ix in med_dic.index:
         bold = run_bold_sweep((theta, setup))
         bold = np.asarray(bold)
 
-        np.savez(output_file, bold=bold, med_params=med_params, med_param_names=['Z_D1', 'Z_D2', 'Z_S'], medication_name = medication_name, est_params=est_params, est_param_names=['ws', 'njdopa_ctx', 'njdopa_str'])
+        np.savez(output_file, bold=bold, med_params=med_params, med_param_names=['Z_D1', 'Z_D2', 'Z_S'], medication_name = medication_name, med_zi=med_zi, est_params=est_params, est_param_names=['ws', 'njdopa_ctx', 'njdopa_str'])
+
+print('Done!')

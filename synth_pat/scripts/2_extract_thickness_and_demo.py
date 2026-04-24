@@ -2,9 +2,10 @@
 import os
 import sys
 import pandas as pd
+from paths import Paths
 
 freesurfer_dir = "/data/core-psy-archive/data/PRONIA/test_vbt_pipe/vbt_derivatives/freesurfer"
-demo_dir = '/data/core-psy-archive/projects/VBT_SCZ/demo.csv'
+demo_dir = Paths.DEMO
 
 all_data = []
 demo_data = pd.read_csv(demo_dir, index_col='PSN')
